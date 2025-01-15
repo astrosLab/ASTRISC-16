@@ -35,14 +35,14 @@ public:
 		stack_pointer = 0xFFEF;
 		call_stack_pointer = 0xF7EF;
 
-		memory[0] = 0b0001000111010001;	
-		memory[1] = 0b0000000000000101;
+		memory[0] = 0b0100000101000000;	
 		program_counter = 0;
 	};
 
 	void decode() {
 		int instruction = memory[program_counter];
 		int opcode = (instruction & 63488) >> 11;
+		std::cout << opcode << std::endl;
 		std::cout << "PC: " << program_counter << std::endl;
 		(this->*opcodes[opcode])();
 	}
@@ -154,9 +154,48 @@ public:
 		program_counter++;
 	}
 
-	void op_push() {}
-	void op_pop() {}
-	void op_mov() {}
+	void op_push() {
+		int reg = (memory[program_counter] & 1792) >> 8;
+
+		if (stack_pointer != 0xFFFF) { // Fix overflow position
+			memory[stack_pointer] = registers[reg];
+			stack_pointer--;
+			std::cout << "Register " << reg << " pushed to stack" << std::endl;
+		} else {
+			std::cout << "Stack Overflow\n";
+			// Add stack overflow error code
+		}
+
+		program_counter++;
+	}
+
+	void op_pop() {
+		int reg = (memory[program_counter] & 1792) >> 8;
+
+		if (stack_pointer != 0xFFEF) {
+			stack_pointer++;
+			registers[reg] = memory[stack_pointer];
+			std::cout << "Stack popped to register " << reg << std::endl;
+		} else {
+			std::cout << "Stack Underflow\n";
+			// Add stack overflow error code
+		}
+
+		program_counter++;
+	}
+
+	void op_mov() {
+		int instruction = memory[program_counter];
+		int reg_from = (instruction & 1792) >> 8;
+		int reg_to = (instruction & 112) >> 8;
+	
+		registers[reg_to] = registers[reg_from];
+
+		std::cout << "Register " << reg_from << " copied to register " << reg_to << std::endl;
+			
+		program_counter++;
+	}
+	
 	void op_add() {}
 	void op_sub() {}
 	void op_mul() {}
