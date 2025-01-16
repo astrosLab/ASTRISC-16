@@ -33,17 +33,58 @@ public:
 		};
 
 		stack_pointer = 0xFFEF;
-		call_stack_pointer = 0xF7EF;
+		call_stack_pointer = 0xFBEF;
 
-		memory[0] = 0b0100000101000000;	
+		memory.fill(0);
+		
+		// Fibonacci program, very messy
+		memory[0] = 0b0000101000000000;
+		memory[1] = 0b1111111111110010;
+		memory[2] = 0b0000100000000000;	
+		memory[3] = 0b0000000000000001;	
+		memory[4] = 0b0000101100000000;	
+		memory[5] = 0b0000000000000001;
+		memory[6] = 0b0000110000000000;	
+		memory[7] = 0b0000000000001010;
+		memory[8] = 0b0001110000000010;
+		memory[9] = 0b0100100000100100;	
+		memory[10] = 0b0001110010000010;
+		memory[11] = 0b0100100000100000;
+		memory[12] = 0b0111001100001100;
+		memory[13] = 0b1011110001100000;
+		memory[14] = 0b1101011111111010;
+		memory[15] = 0b1111100000000000;
+
+		running = false;
+		debug = false;
 		program_counter = 0;
 	};
+
+	void debug_mode() { debug = true; }
+
+	void run() {
+		running = true;
+
+		while (running == true) {
+			memory[0xFFF0] = program_counter;
+			decode();
+			if (memory[0xFFF2] != 0) {
+				std::cout << std::to_string(memory[0xFFF2]) << std::endl;
+				memory[0xFFF2] = 0;
+			}
+		}
+	}
 
 	void decode() {
 		int instruction = memory[program_counter];
 		int opcode = (instruction & 63488) >> 11;
-		std::cout << opcode << std::endl;
-		std::cout << "PC: " << program_counter << std::endl;
+
+		if (debug) {
+			std::cout << std::endl;
+			std::cout << opcode << std::endl;
+			std::cout << "PC: " << program_counter << std::endl;
+		}
+
 		(this->*opcodes[opcode])();
 	}
 	
@@ -54,8 +95,9 @@ public:
 	void op_ldi() {
 		int reg = (memory[program_counter] & 1792) >> 8;
 		int imm = memory[program_counter + 1];
-		
-		std::cout << "Register " << reg << " = " << imm << std::endl;
+	
+		if (debug)
+			std::cout << "Register " << reg << " = " << imm << std::endl;
 
 		registers[reg] = imm;
 		program_counter += 2;	
@@ -80,17 +122,16 @@ public:
 
 		if (use_offset == 1)
 			addr += registers[offset_reg];
-
-		std::cout << registers[offset_reg] << std::endl;
-
-		std::cout
-			<< "IMM/REG: " << imm_reg
-			<< ", REG: " << reg
-			<< ", OFFSET?: " << use_offset
-			<< ", OFFSET REG: " << offset_reg
-			<< ", POINTER REG: " << ptr_reg
-			<< ", ADDRESS: " << addr
-			<< std::endl;
+		
+		if (debug)
+			std::cout
+				<< "IMM/REG: " << imm_reg
+				<< ", REG: " << reg
+				<< ", OFFSET?: " << use_offset
+				<< ", OFFSET REG: " << offset_reg
+				<< ", POINTER REG: " << ptr_reg
+				<< ", ADDRESS: " << addr
+				<< std::endl;
 
 		registers[reg] = memory[addr];
 	}
@@ -115,16 +156,15 @@ public:
 		if (use_offset == 1)
 			addr += registers[offset_reg];
 
-		std::cout << registers[offset_reg] << std::endl;
-
-		std::cout
-			<< "IMM/REG: " << imm_reg
-			<< ", REG: " << reg
-			<< ", OFFSET?: " << use_offset
-			<< ", OFFSET REG: " << offset_reg
-			<< ", POINTER REG: " << ptr_reg
-			<< ", ADDRESS: " << addr
-			<< std::endl;
+		if (debug)
+			std::cout
+				<< "IMM/REG: " << imm_reg
+				<< ", REG: " << reg
+				<< ", OFFSET?: " << use_offset
+				<< ", OFFSET REG: " << offset_reg
+				<< ", POINTER REG: " << ptr_reg
+				<< ", ADDRESS: " << addr
+				<< std::endl;
 
 		memory[addr] = registers[reg];
 	}
@@ -132,23 +172,23 @@ public:
 	void op_call() {
 		int address = memory[program_counter + 1];
 
-		if (call_stack_pointer != 0xF7FF){
+		if (call_stack_pointer != 0xF7EF){
 			memory[call_stack_pointer] = program_counter + 1;
 			call_stack_pointer--;
 		} else {
-			std::cout << "Call Stack Overflow\n";
-			// Add call stack overflow error code
+			if (debug) std::cout << "Call Stack Overflow\n";
+			memory[0xFFF1] = 3;
 		}
 
 		program_counter += 2;
 	}
 
 	void op_ret() {
-		if (call_stack_pointer != 0xFFEF){
+		if (call_stack_pointer != 0xFBEF){
 			call_stack_pointer++;
 		} else {
-			std::cout << "Call Stack Underflow\n";
-			// Add call stack underflow error code
+			if (debug) std::cout << "Call Stack Underflow\n";
+			memory[0xFFF1] = 4;
 		}
 
 		program_counter++;
@@ -157,13 +197,13 @@ public:
 	void op_push() {
 		int reg = (memory[program_counter] & 1792) >> 8;
 
-		if (stack_pointer != 0xFFFF) { // Fix overflow position
+		if (stack_pointer != 0xFBEF) { 
 			memory[stack_pointer] = registers[reg];
 			stack_pointer--;
-			std::cout << "Register " << reg << " pushed to stack" << std::endl;
+			if (debug) std::cout << "Register " << reg << " pushed to stack" << std::endl;
 		} else {
 			std::cout << "Stack Overflow\n";
-			// Add stack overflow error code
+			memory[0xFFF1] = 1;
 		}
 
 		program_counter++;
@@ -175,10 +215,10 @@ public:
 		if (stack_pointer != 0xFFEF) {
 			stack_pointer++;
 			registers[reg] = memory[stack_pointer];
-			std::cout << "Stack popped to register " << reg << std::endl;
+			if (debug) std::cout << "Stack popped to register " << reg << std::endl;
 		} else {
-			std::cout << "Stack Underflow\n";
-			// Add stack overflow error code
+			if (debug) std::cout << "Stack Underflow\n";
+			memory[0xFFF1] = 2;
 		}
 
 		program_counter++;
@@ -187,36 +227,426 @@ public:
 	void op_mov() {
 		int instruction = memory[program_counter];
 		int reg_from = (instruction & 1792) >> 8;
-		int reg_to = (instruction & 112) >> 8;
+		int reg_to = (instruction & 224) >> 5;
 	
 		registers[reg_to] = registers[reg_from];
 
-		std::cout << "Register " << reg_from << " copied to register " << reg_to << std::endl;
+		if (debug) std::cout << "Register " << reg_from << " copied to register " << reg_to << std::endl;
 			
 		program_counter++;
 	}
 	
-	void op_add() {}
-	void op_sub() {}
-	void op_mul() {}
-	void op_div() {}
-	void op_mod() {}
-	void op_inc() {}
-	void op_dec() {}
-	void op_shl() {}
-	void op_shr() {}
-	void op_and() {}
-	void op_nand() {}
-	void op_or() {}
-	void op_nor() {}
-	void op_xor() {}
-	void op_cmp() {}
-	void op_jmp() {}
-	void op_brh_z() {}
-	void op_brh_nz() {}
-	void op_brh_s() {}
-	void op_brh_ns() {}
-	void op_halt() {}
+	void op_add() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] + registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_sub() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] - registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+
+	}
+
+	void op_mul() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] * registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+	
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+
+	}
+
+	void op_div() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+		
+		if (registers[reg_in2] != 0) {
+			int result = (int)(registers[reg_in1] / registers[reg_in2]) & 65535;
+
+			registers[reg_out] = result;
+
+			if (debug) 
+				std::cout
+					<< "Reg IN 1: " << reg_in1
+					<< " Reg IN 2: " << reg_in2
+					<< " Reg OUT: " << reg_out
+					<< " Result: " << result
+					<< std::endl;
+		} else {
+			memory[65521] = 5;
+			if (debug) std::cout << "Division by zero\n";
+		}
+
+		program_counter++;
+	}
+
+	void op_mod() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		if (registers[reg_in2] != 0) {
+			int result = (registers[reg_in1] % registers[reg_in2]) & 65535;
+
+			registers[reg_out] = result;
+			
+			if (debug) 
+				std::cout
+					<< "Reg IN 1: " << reg_in1
+					<< " Reg IN 2: " << reg_in2
+					<< " Reg OUT: " << reg_out
+					<< " Result: " << result
+					<< std::endl;
+		} else {
+			memory[65521] = 5;
+			if (debug) std::cout << "Division by zero\n";
+		}
+		
+		program_counter++;
+	}
+
+	void op_inc() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] + 1) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN: " << reg_in1
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_dec() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] - 1) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN: " << reg_in1
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_shl() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] << 1) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN: " << reg_in1
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_shr() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] >> 1) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN: " << reg_in1
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_and() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] & registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_nand() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = ~(registers[reg_in1] & registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_or() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] | registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_nor() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = ~(registers[reg_in1] | registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Reg OUT: " << reg_out
+				<< " Result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_xor() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+		int reg_out = (instruction & 28) >> 2;
+
+		int result = (registers[reg_in1] ^ registers[reg_in2]) & 65535;
+		
+		registers[reg_out] = result;
+
+		if (debug) 
+			std::cout
+				<< "reg in 1: " << reg_in1
+				<< " reg in 2: " << reg_in2
+				<< " reg out: " << reg_out
+				<< " result: " << result
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	void op_cmp() {
+		int instruction = memory[program_counter];
+		int reg_in1 = (instruction & 1792) >> 8;
+		int reg_in2 = (instruction & 224) >> 5;
+
+		int result = (registers[reg_in1] - registers[reg_in2]) & 65535;
+
+		if (result == 0)
+			flags["zero"] = true;
+		else
+			flags["zero"] = false;
+
+		if (result != 0)
+			flags["not zero"] = true;
+		else
+			flags["not zero"] = false;
+
+		if ((result & 32768) >> 15 == 1)
+			flags["signed"] = true;
+		else
+			flags["signed"] = false;
+
+		if ((result & 32768) >> 15 == 0)
+			flags["not signed"] = true;
+		else
+			flags["not signed"] = false;
+
+		if (debug) 
+			std::cout
+				<< "Reg IN 1: " << reg_in1
+				<< " Reg IN 2: " << reg_in2
+				<< " Result: " << result
+				<< "\nZero Flag: " << flags["zero"]
+				<< " Not Zero Flag: " << flags["not zero"]
+				<< " Signed Flag: " << flags["signed"]
+				<< " Not Signed Flag: " << flags["not signed"]
+				<< std::endl;
+
+		program_counter++;
+	}
+
+	int toTwosComplement(int number) {
+		if (number & 1024) {
+			return number - 2048;
+		}
+		return number;
+	}
+
+	void op_jmp() {
+		int instruction = memory[program_counter];
+		int offset = ~(instruction & 2047) + 1;
+
+		if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
+
+		program_counter += offset;
+	}
+
+	void op_brh_z() {
+		int instruction = memory[program_counter];
+		int offset = toTwosComplement(instruction & 2047);
+
+		if (flags["zero"] == true) {
+			program_counter += offset;
+			if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
+		} else {
+			program_counter++;
+			if (debug) std::cout << "Flag ZERO is false, didn't jump\n";
+		}
+	}
+
+	void op_brh_nz() {
+		int instruction = memory[program_counter];
+		int offset = toTwosComplement(instruction & 2047);
+
+		if (flags["not zero"] == true) {
+			program_counter += offset;
+			if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
+		} else {
+			program_counter++;
+			if (debug) std::cout << "Flag NOT ZERO is false, didn't jump\n";
+		}
+	}
+
+	void op_brh_s() {
+		int instruction = memory[program_counter];
+		int offset = toTwosComplement(instruction & 2047);
+
+		if (flags["signed"] == true) {
+			program_counter += offset;
+			if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
+		} else {
+			program_counter++;
+			if (debug) std::cout << "Flag SIGNED is false, didn't jump\n";
+		}
+	}
+
+	void op_brh_ns() {
+		int instruction = memory[program_counter];
+		int offset = toTwosComplement(instruction & 2047);
+
+		if (flags["not signed"] == true) {
+			program_counter += offset;
+			if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
+		} else {
+			program_counter++;
+			if (debug) std::cout << "Flag NOT SIGNED is false, didn't jump\n";
+		}
+	}
+
+	void op_halt() {
+		running = false;
+		if (debug) std::cout << "Halted\n";
+	}
 private:
 	std::array<int, 65536> memory;
 	std::array<int, 8> registers;
@@ -226,11 +656,14 @@ private:
 	int call_stack_pointer;
 	using OpcodeFunction = void (ASTRISC::*)();
 	std::array<OpcodeFunction, 32> opcodes;
+	bool running;
+	bool debug;
 };
 
 int main() {
 	ASTRISC cpu;
-	cpu.decode();
+	// cpu.debug_mode();
+	cpu.run();
 	return 0;
 }
 

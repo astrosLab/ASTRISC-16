@@ -59,3 +59,9 @@ The name comes from combining Astro (My main username) and RISC (Reduced Instruc
 
 The ASTRISC-16 doesn't halt on errors such as division by zero, stack overflow, and stack underflow, instead it's stored to a memory-mapped error I/O port.
 
+Stack Overflow = 1
+Stack Underflow = 2
+Call Stack Overflow = 3
+Call Stack Underflow = 4
+Division by 0 = 5
+
