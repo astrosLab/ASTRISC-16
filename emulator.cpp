@@ -1,4 +1,6 @@
 #include <iostream>
+#include <thread>
+#include <chrono>
 #include <string>
 #include <map>
 #include <array>
@@ -57,21 +59,64 @@ public:
 
 		running = false;
 		debug = false;
+		step = false;
+		hertz = 1000;
 		program_counter = 0;
 	};
 
-	void debug_mode() { debug = true; }
+	void debug_mode() { 
+		debug = true; 
+		std::cout << "Debug mode has been enabled\n";
+	}
+
+	void step_mode() { 
+		step = true;
+		if (debug) std::cout << "Step mode has been enabled\n";
+	}
+
+	void set_hertz(int new_hertz) {
+		hertz = new_hertz; 
+		if (debug) std::cout << "Hertz has been set to: " << hertz << std::endl;
+	}
 
 	void run() {
+		int cycle_time = 1000 / hertz;
 		running = true;
 
-		while (running == true) {
-			memory[0xFFF0] = program_counter;
-			decode();
-			if (memory[0xFFF2] != 0) {
-				std::cout << std::to_string(memory[0xFFF2]) << std::endl;
-				memory[0xFFF2] = 0;
+		if (debug) {
+			std::cout << "CPU is now running with a cycle time of: " << cycle_time << "ms\n";
+		}
+
+		if (step == false) {
+			while (running == true) {
+				memory[0xFFF0] = program_counter;
+				decode();
+				if (memory[0xFFF2] != 0) {
+					std::cout << std::to_string(memory[0xFFF2]) << std::endl;
+					memory[0xFFF2] = 0;
+				}
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(cycle_time));
 			}
+		}
+	}
+
+	void do_step() {
+		memory[0xFFF0] = program_counter;
+		decode();
+		if (memory[0xFFF2] != 0) {
+			std::cout << std::to_string(memory[0xFFF2]) << std::endl;
+			memory[0xFFF2] = 0;
+		}
+	}
+
+	int check_io(int io_port) {
+		if (io_port > 15) {
+			std::cout << "Cannot access io port, allowed ports are 0 to 15\n";
+			return -1;
+		} else {
+			int io_value = memory[0xFFF0 + io_port];
+			return io_value;
 		}
 	}
 
@@ -658,11 +703,14 @@ private:
 	std::array<OpcodeFunction, 32> opcodes;
 	bool running;
 	bool debug;
+	bool step;
+	int hertz;
 };
 
 int main() {
 	ASTRISC cpu;
 	// cpu.debug_mode();
+	cpu.set_hertz(1000);
 	cpu.run();
 	return 0;
 }
