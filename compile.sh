@@ -1,5 +1,5 @@
 #!/bin/bash
 
-g++ ./emulator.cpp -o ./build/emulator
+g++ ./src/emulator.cpp -o ./build/emulator
 ./build/emulator
 
