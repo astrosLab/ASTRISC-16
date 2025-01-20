@@ -25,7 +25,7 @@ The name comes from combining Astro (My main username) and RISC (Reduced Instruc
 - 0x00 NOP - Does nothing
 - 0x01 LDI REG // IMMEDIATE - Load IMMEDIATE into REG
 - 0x02 LOD IMM/REG REG USE-OFFSET OFFSET REG-PTR // IMMEDIATE - Load into REG, using IMMEDIATE+OFFSET(IF USE-OFFSET) if IMM/REG=IMM and REG-PTR+OFFSET if IMM/REG=REG
-- 0x03 STR IMM/REG REG USE-OFFSET OTFFSET REG-PTR // IMMEDIATE - Store into REG, using IMMEDIATE+OFFSET(IF USE-OFFSET) if IMM/REG=IMM and REG-PTR+OFFSET if IMM/REG=REG
+- 0x03 STR IMM/REG REG USE-OFFSET OFFSET REG-PTR // IMMEDIATE - Store into REG, using IMMEDIATE+OFFSET(IF USE-OFFSET) if IMM/REG=IMM and REG-PTR+OFFSET if IMM/REG=REG
 - 0x04 CALL // ADDRESS - Push PC+1 to call stack, jump to ADDRESS
 - 0x05 RET - Pop call stack, jump to value from call stack output
 - 0x06 PUSH REG - Pushes the value in REG into the stack

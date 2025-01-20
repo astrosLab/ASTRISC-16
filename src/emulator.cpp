@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <array>
+#include "cpugui.h"
 
 class ASTRISC {
 public:
@@ -37,29 +38,45 @@ public:
 		stack_pointer = 0xFFEF;
 		call_stack_pointer = 0xFBEF;
 
+		registers.fill(0);
 		memory.fill(0);
 		
 		// Fibonacci program, very messy
-		memory[0] = 0b0000101000000000;
-		memory[1] = 0b1111111111110010;
-		memory[2] = 0b0000100000000000;	
-		memory[3] = 0b0000000000000001;	
-		memory[4] = 0b0000101100000000;	
-		memory[5] = 0b0000000000000001;
-		memory[6] = 0b0000110000000000;	
-		memory[7] = 0b0000000000001010;
-		memory[8] = 0b0001110000000010;
-		memory[9] = 0b0100100000100100;	
-		memory[10] = 0b0001110010000010;
-		memory[11] = 0b0100100000100000;
-		memory[12] = 0b0111001100001100;
-		memory[13] = 0b1011110001100000;
-		memory[14] = 0b1101011111111010;
-		memory[15] = 0b1111100000000000;
+		// memory[0] = 0b0000101000000000;
+		// memory[1] = 0b1111111111110010;
+		// memory[2] = 0b0000100000000000;	
+		// memory[3] = 0b0000000000000001;	
+		// memory[4] = 0b0000101100000000;	
+		// memory[5] = 0b0000000000000001;
+		// memory[6] = 0b0000110000000000;	
+		// memory[7] = 0b0000000000001010;
+		// memory[8] = 0b0001110000000010;
+		// memory[9] = 0b0100100000100100;	
+		// memory[10] = 0b0001110010000010;
+		// memory[11] = 0b0100100000100000;
+		// memory[12] = 0b0111001100001100;
+		// memory[13] = 0b1011110001100000;
+		// memory[14] = 0b1101011111111010;
+		// memory[15] = 0b1111100000000000;
+		
+		// Simple program for testing the display and stack
+		memory[0] = 0b0000100000000000;
+		memory[1] = 0b0111110000000000;
+		memory[2] = 0b0001100000000000;
+		memory[3] = 0b1111111111110011;
+		memory[4] = 0b0111000100000100;
+		memory[5] = 0b0001100010000000;
+		memory[6] = 0b1111111111110100;
+		memory[7] = 0b0011000000000000;
+		memory[8] = 0b0000000000000000;
+		memory[9] = 0b0000000000000000;
+		memory[10] = 0b0000000000000000;
+		memory[11] = 0b1111100000000000;
 
 		running = false;
 		debug = false;
 		step = false;
+		gui = false;
 		hertz = 1000;
 		program_counter = 0;
 	};
@@ -74,6 +91,11 @@ public:
 		if (debug) std::cout << "Step mode has been enabled\n";
 	}
 
+	void init_gui() {
+		gui = true;
+		if (debug) std::cout << "GUI has been enabled\n";
+	}
+
 	void set_hertz(int new_hertz) {
 		hertz = new_hertz; 
 		if (debug) std::cout << "Hertz has been set to: " << hertz << std::endl;
@@ -83,6 +105,8 @@ public:
 		int cycle_time = 1000 / hertz;
 		running = true;
 
+		CpuWindow cpugui;
+
 		if (debug) {
 			std::cout << "CPU is now running with a cycle time of: " << cycle_time << "ms\n";
 		}
@@ -91,14 +115,29 @@ public:
 			while (running == true) {
 				memory[0xFFF0] = program_counter;
 				decode();
-				if (memory[0xFFF2] != 0) {
-					std::cout << std::to_string(memory[0xFFF2]) << std::endl;
-					memory[0xFFF2] = 0;
+				//if (memory[0xFFF2] != 0) {
+				//	std::cout << std::to_string(memory[0xFFF2]) << std::endl;
+				//	memory[0xFFF2] = 0;
+				//}
+
+				if (gui == true) {
+					if (cpugui.isWindowOpen() == false) {
+						op_halt();
+					}
+
+					cpugui.update(
+							registers, 
+							flags, 
+							memory, 
+							stack_pointer, 
+							call_stack_pointer);
 				}
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(cycle_time));
 			}
 		}
+
+		cpugui.closeWindow();
 	}
 
 	void do_step() {
@@ -704,13 +743,15 @@ private:
 	bool running;
 	bool debug;
 	bool step;
+	bool gui;
 	int hertz;
 };
 
 int main() {
 	ASTRISC cpu;
 	// cpu.debug_mode();
-	cpu.set_hertz(1000);
+	cpu.init_gui();
+	cpu.set_hertz(2);
 	cpu.run();
 	return 0;
 }
