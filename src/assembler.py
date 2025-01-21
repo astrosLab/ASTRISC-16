@@ -34,6 +34,8 @@ definitions = {
     "r7": 7,
 }
 
+labels = {}
+
 formatted_program = []
 
 for num, line in enumerate(program):
@@ -41,26 +43,29 @@ for num, line in enumerate(program):
     if separated[0] == "#define":
         definitions[separated[1]] = to_decimal(separated[2])
     elif separated[0][0] == '.':
-        formatted_program.append({
-            "label": separated[0]
-        })
+        labels[separated[0]] = {"position": num}
     else:
-        formatted_program.append({
-            "opcode": separated[0],
-            "operands": separated[1:]
-        })
+        formatted_program.append([separated[0], separated[1:]])
 
-address = 0
-for line in formatted_program:
-    if "label" in line:
-        print(line["label"])
-        definitions[line["label"]] = address
-        formatted_program.pop(address)
+address = 0;
+for num, line in enumerate(formatted_program):
+    formatted_program[num].append(address)
 
-    address += 1
-
-for line in formatted_program:
+    if line[0] == "str" or line[0] == "lod":
+        if line[1][1].isdigit() or line[1][1] in definitions.keys():
+            address += 2
+        else:
+            address += 1
+    elif line[0] == "ldi" or line[0] == "cal":
+        address += 2
+    else:
+        address + 1
+ 
     print(line)
 
-for j in definitions:
-    print(j, definitions[j])
+for d in definitions:
+    print(d, definitions[d])
+
+for l in labels:
+    print(l, labels[l])
+
