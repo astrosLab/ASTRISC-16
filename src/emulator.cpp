@@ -60,18 +60,38 @@ public:
 		// memory[15] = 0b1111100000000000;
 		
 		// Simple program for testing the display and stack
-		memory[0] = 0b0000100000000000;
-		memory[1] = 0b0111110000000000;
+		//memory[0] = 0b0000100000000000;
+		//memory[1] = 0b0111110000000000;
+		//memory[2] = 0b0001100000000000;
+		//memory[3] = 0b1111111111110011;
+		//memory[4] = 0b0111000100000100;
+		//memory[5] = 0b0001100010000000;
+		//memory[6] = 0b1111111111110100;
+		//memory[7] = 0b0011000000000000;
+		//memory[8] = 0b0000000000000000;
+		//memory[9] = 0b0000000000000000;
+		//memory[10] = 0b0000000000000000;
+		//memory[11] = 0b0000000000000000;
+		//memory[12] = 0b0000000000000000;
+		//memory[13] = 0b0000000000000000;
+		//memory[14] = 0b0000000000000000;
+		//memory[15] = 0b0000000000000000;
+		//memory[16] = 0b0000000000000000;
+		//memory[17] = 0b0000000000000000;
+		//memory[18] = 0b1111100000000000;
+
+		// Rainbow gradient
+		memory[0] = 0b0111000100000100;
+		memory[1] = 0b0111000000000000;
 		memory[2] = 0b0001100000000000;
-		memory[3] = 0b1111111111110011;
-		memory[4] = 0b0111000100000100;
-		memory[5] = 0b0001100010000000;
-		memory[6] = 0b1111111111110100;
-		memory[7] = 0b0011000000000000;
-		memory[8] = 0b0000000000000000;
-		memory[9] = 0b0000000000000000;
-		memory[10] = 0b0000000000000000;
-		memory[11] = 0b1111100000000000;
+		memory[3] = 0xFFF3;
+		memory[4] = 0b0001100000000000;
+		memory[5] = 0xFFF5;
+		memory[6] = 0b0001100010000000;
+		memory[7] = 0xFFF4;
+		memory[8] = 0b1011100011100000;
+		memory[9] = 0b1101011111111000;
+		memory[10] = 0b1111100000000000;
 
 		running = false;
 		debug = false;
@@ -751,7 +771,7 @@ int main() {
 	ASTRISC cpu;
 	// cpu.debug_mode();
 	cpu.init_gui();
-	cpu.set_hertz(2);
+	cpu.set_hertz(5000);
 	cpu.run();
 	return 0;
 }

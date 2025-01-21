@@ -4,7 +4,7 @@ CpuWindow::CpuWindow() {
 	m_window.create(
 			VideoMode(1920, 1080),
 			"ASTRISC-16",
-			Style::Close
+			Style::Close | Style::Fullscreen
 			);
 
 	if (!m_sevensegment.loadFromFile("./fonts/seven_segment.ttf")) {
@@ -95,7 +95,7 @@ void CpuWindow::update(
 	std::string reg_ss;
 	for (int i = 0; i < 8; ++i) {
 		char reghex[4];
-		std::sprintf(reghex, "%X", memory[i]);
+		std::sprintf(reghex, "%X", registers[i]);
 		std::string hex = addPadding(reghex, 4, '0');
 		reg_ss.append(
 				"R" + std::to_string(i) + ": " + hex + " (" +
@@ -194,20 +194,20 @@ void CpuWindow::placePixel(std::array <int, 65536> &memory) {
 	int parameters = memory[0xFFF5];
 
 	if (function == 1) {
-		int r = (color & 31774) >> 10;
+		int b = (color & 31774) >> 10;
 		int g = (color & 992) >> 5;
-		int b = (color & 31);
+		int r = (color & 31);
 		int r8 = static_cast<int>((r / 31.0) * 255);
 		int g8 = static_cast<int>((g / 31.0) * 255);
 		int b8 = static_cast<int>((b / 31.0) * 255);
 		Color converted = Color(r8, g8, b8);
-		int x = (parameters >> 5) & 992;
-		int y = parameters & 31;
+		int x = parameters & 31;
+		int y = (parameters & 992) >> 5;
 
-		std::cout
-			<< "Drawn pixel to: " << x << " " << y
-			<< " Color is: " << r8 << " " << g8 << " " << b8
-			<< std::endl;
+		//std::cout
+		//	<< "Drawn pixel to: " << x << " " << y
+		//	<< " Color is: " << r8 << " " << g8 << " " << b8
+		//	<< std::endl;
 
 		m_panelpixelsimage.setPixel(x, y, converted);
 		memory[0xFFF4] = 0;
