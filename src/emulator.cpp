@@ -771,7 +771,7 @@ int main() {
 	ASTRISC cpu;
 	// cpu.debug_mode();
 	cpu.init_gui();
-	cpu.set_hertz(5000);
+	cpu.set_hertz(1000);
 	cpu.run();
 	return 0;
 }
