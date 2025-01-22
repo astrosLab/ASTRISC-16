@@ -34,38 +34,64 @@ definitions = {
     "r7": 7,
 }
 
-labels = {}
+p_program = []
 
-formatted_program = []
-
-for num, line in enumerate(program):
-    separated = line.split(" ")
-    if separated[0] == "#define":
-        definitions[separated[1]] = to_decimal(separated[2])
-    elif separated[0][0] == '.':
-        labels[separated[0]] = {"position": num}
+# Parse
+position = 0
+for index, line in enumerate(program):
+    parsed = line.split(" ")  
+    if parsed[0] == "#define":
+        definitions[parsed[1]] = to_decimal(parsed[2])
+        continue
+    elif parsed[0].startswith("."):
+        if position < len(p_program):
+            p_program[position]["label"] = parsed[0]
+        else:
+            p_program.append({"label": parsed[0]})
+        continue
     else:
-        formatted_program.append([separated[0], separated[1:]])
+        if position < len(p_program):
+            p_program[position]["opcode"] = parsed[0]
+            p_program[position]["operands"] = parsed[1:]
+        else:
+            p_program.append({"opcode": parsed[0], "operands": parsed[1:]})
 
-address = 0;
-for num, line in enumerate(formatted_program):
-    formatted_program[num].append(address)
+        position += 1
 
-    if line[0] == "str" or line[0] == "lod":
-        if line[1][1].isdigit() or line[1][1] in definitions.keys():
+# Get correct instruction lengths
+address = 0
+for index, line in enumerate(p_program):
+        p_program[index]["address"] = address
+        if line["opcode"] in ["str", "lod"]:
+            if line["operands"][1].isdigit() or line["operands"][1] in definitions.keys():
+                address += 2
+            else:
+                address += 1
+        elif line["opcode"] in ["ldi", "cal"]:
             address += 2
         else:
             address += 1
-    elif line[0] == "ldi" or line[0] == "cal":
-        address += 2
-    else:
-        address + 1
- 
-    print(line)
 
-for d in definitions:
-    print(d, definitions[d])
+# Define labels
+for index, line in enumerate(p_program):
+    if "label" in line.keys():
+        definitions[line["label"]] = line["address"]
 
-for l in labels:
-    print(l, labels[l])
+# Replace definitions with value
+for index, line in enumerate(p_program):
+    for opindex, operand in enumerate(line["operands"]):
+        if operand in definitions.keys():
+            if line["opcode"] in ["jmp", "brh-z", "brh-nz", "brh-s", "brh-ns"]:
+                line["operands"][opindex] = definitions[operand] - line["address"]
+            else:
+                line["operands"][opindex] = definitions[operand]
+        else:
+            line["operands"][opindex] = to_decimal(line["operands"][opindex])
 
+for line in p_program:
+    print(line["opcode"], line["operands"])
+
+for definition in definitions:
+    print(definition, definitions[definition])
+
+# Convert to numbers and create .bin file
