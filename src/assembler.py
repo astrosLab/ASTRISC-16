@@ -15,12 +15,12 @@ with open(file_path, "r") as assembly:
     program = [i.strip() for i in assembly.readlines() if i.strip() != '']
 
 opcodes = [
-    "nop", "ldi", "lod", "str", "call", "ret",
+    "nop", "ldi", "lod", "str", "cal", "ret",
     "push", "pop", "mov", "add", "sub", "mul",
     "div", "mod", "inc", "dec", "shl", "shr",
     "and", "nand", "or", "nor", "xor", "xnor",
     "cmp", "jmp", "brh-z", "brh-nz", "brh-s",
-    "brh-nz", "halt"
+    "brh-nz", "res", "res", "halt"
 ]
 
 definitions = {
@@ -79,6 +79,7 @@ for index, line in enumerate(p_program):
 
 # Replace definitions with value
 for index, line in enumerate(p_program):
+    line["opcode"] = opcodes.index(line["opcode"]) - 1
     for opindex, operand in enumerate(line["operands"]):
         if operand in definitions.keys():
             if line["opcode"] in ["jmp", "brh-z", "brh-nz", "brh-s", "brh-ns"]:
@@ -91,7 +92,13 @@ for index, line in enumerate(p_program):
 for line in p_program:
     print(line["opcode"], line["operands"])
 
-for definition in definitions:
-    print(definition, definitions[definition])
+# Convert to numbers and crea
+program_bytes = []
+for line in p_program:
+    opcode = line["opcode"] << 11
+    print(opcode) 
 
-# Convert to numbers and create .bin file
+# data = bytearray(program_bytes)
+# program_name = sys.argv[1].split("/")[-1].replace(".asm", ".bin")
+# print(program_name)
+
