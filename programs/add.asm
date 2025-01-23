@@ -4,7 +4,7 @@
 	ldi r0 5
 	ldi r1 6
 	add r0 r1 r2
-	str r0 segment_display
+	str r2 segment_display
 	jmp .halt
 
 .halt

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <chrono>
 #include <string>
@@ -100,6 +101,25 @@ public:
 		hertz = 1000;
 		program_counter = 0;
 	};
+
+	void load_program(char* file_path) {
+		std::ifstream file(file_path, std::ios::binary);
+		
+		if (!file) {
+			std::cerr << "Could not open file.\n";
+			return;
+		}
+
+		char byte1, byte2;
+		int position = 0;
+		while (file.get(byte1) && file.get(byte2))  {
+			uint16_t combined (
+							static_cast<unsigned char>(byte1) << 8 |
+							static_cast<unsigned char>(byte2));
+			memory[position] = combined;
+			position++;
+		}
+	}
 
 	void debug_mode() { 
 		debug = true; 
@@ -279,23 +299,23 @@ public:
 		if (call_stack_pointer != 0xF7EF){
 			memory[call_stack_pointer] = program_counter + 1;
 			call_stack_pointer--;
+			program_counter = address;
+			if (debug) std::cout << "Calling address: " << address << std::endl;
 		} else {
 			if (debug) std::cout << "Call Stack Overflow\n";
 			memory[0xFFF1] = 3;
 		}
-
-		program_counter += 2;
 	}
 
 	void op_ret() {
 		if (call_stack_pointer != 0xFBEF){
+			program_counter = memory[call_stack_pointer];
+			if (debug) std::cout << "Returning to: " << memory[call_stack_pointer] << std::endl;
 			call_stack_pointer++;
 		} else {
 			if (debug) std::cout << "Call Stack Underflow\n";
 			memory[0xFFF1] = 4;
 		}
-
-		program_counter++;
 	}
 
 	void op_push() {
@@ -680,6 +700,7 @@ public:
 	}
 
 	int toTwosComplement(int number) {
+		std::cout << std::to_string(number) << std::endl;
 		if (number & 1024) {
 			return number - 2048;
 		}
@@ -688,7 +709,7 @@ public:
 
 	void op_jmp() {
 		int instruction = memory[program_counter];
-		int offset = ~(instruction & 2047) + 1;
+		int offset = toTwosComplement(instruction & 2047);
 
 		if (debug) std::cout << "Jumped by: " << std::to_string(offset) << std::endl;
 
@@ -767,11 +788,12 @@ private:
 	int hertz;
 };
 
-int main() {
+int main(int argc, char* argv[]) {
 	ASTRISC cpu;
-	// cpu.debug_mode();
+	cpu.load_program(argv[1]);
+	cpu.debug_mode();
 	cpu.init_gui();
-	cpu.set_hertz(1000);
+	cpu.set_hertz(2);
 	cpu.run();
 	return 0;
 }
