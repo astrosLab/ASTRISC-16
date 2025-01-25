@@ -661,7 +661,7 @@ public:
 	void op_cmp() {
 		int instruction = memory[program_counter];
 		int reg_in1 = (instruction & 1792) >> 8;
-		int reg_in2 = (instruction & 224) >> 5;
+		int reg_in2 = (instruction & 30) >> 2;
 
 		int result = (registers[reg_in1] - registers[reg_in2]) & 65535;
 
@@ -700,7 +700,6 @@ public:
 	}
 
 	int toTwosComplement(int number) {
-		std::cout << std::to_string(number) << std::endl;
 		if (number & 1024) {
 			return number - 2048;
 		}
@@ -791,9 +790,9 @@ private:
 int main(int argc, char* argv[]) {
 	ASTRISC cpu;
 	cpu.load_program(argv[1]);
-	cpu.debug_mode();
+	// cpu.debug_mode();
 	cpu.init_gui();
-	cpu.set_hertz(2);
+	cpu.set_hertz(1000);
 	cpu.run();
 	return 0;
 }

@@ -25,7 +25,7 @@ opcodes = [
     "div", "mod", "inc", "dec", "shl", "shr",
     "and", "nand", "or", "nor", "xor",
     "cmp", "jmp", "brh-z", "brh-nz", "brh-s",
-    "brh-nz", "res", "res", "halt"
+    "brh-ns", "res", "res", "halt"
 ]
 
 definitions = {
@@ -142,6 +142,7 @@ for index, line in enumerate(p_program):
         continue
     elif line["opcode"] in [14, 15, 16, 17, 23]:
         instruction += line["operands"][0] << 8
+        instruction += line["operands"][1] << 2
         program_bytes.append(instruction)
         continue
     elif line["opcode"] in [24, 25, 26, 27, 28, 29]:
