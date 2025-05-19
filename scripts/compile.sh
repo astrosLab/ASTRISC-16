@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-g++ ./src/emulator.cpp ./src/cpugui.cpp -o ./build/emulator -lsfml-graphics -lsfml-window -lsfml-system
+#g++ -g -fsanitize=address -o ./build/emulator ./src/emulator.cpp ./src/cpugui.cpp -lsfml-graphics -lsfml-window -lsfml-system
+g++ -o ./build/emulator ./src/emulator.cpp ./src/cpugui.cpp -lsfml-graphics -lsfml-window -lsfml-system
 ./build/emulator
 

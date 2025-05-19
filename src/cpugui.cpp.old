@@ -1,30 +1,18 @@
 #include "cpugui.h"
 
-CpuWindow::CpuWindow():
-	m_registers(m_jetbrains),
-	m_flags(m_jetbrains),
-	m_memory(m_jetbrains),
-	m_memorylabels(m_jetbrains),
-	m_segmentnumber(m_jetbrains),
-	m_programcounter(m_jetbrains),
-	m_stack(m_jetbrains),
-	m_callstack(m_jetbrains)
-
-	{
+CpuWindow::CpuWindow() {
 	m_window.create(
-			VideoMode({1920, 1080}),
+			VideoMode(1920, 1080),
 			"ASTRISC-16",
-			Style::Close
+			Style::Close | Style::Fullscreen
 			);
 
-	if (!m_sevensegment.openFromFile("./fonts/seven_segment.ttf")) {
-		std::cout << "Unable to load font (seven_segment.ttf).\n";
-		return;
+	if (!m_sevensegment.loadFromFile("./fonts/seven_segment.ttf")) {
+		std::cout << "Unable to load font.\n";
 	}
 
-	if (!m_jetbrains.openFromFile("./fonts/jetbrains.ttf")) {
-		std::cout << "Unable to load font (jetbrains.ttf).\n";
-		return;
+	if (!m_jetbrains.loadFromFile("./fonts/jetbrains.ttf")) {
+		std::cout << "Unable to load font.\n";
 	}
 
 	m_registers.setFont(m_jetbrains);
@@ -43,13 +31,13 @@ CpuWindow::CpuWindow():
 	m_memory.setPosition({1050, 350});
 
 	m_panel.setSize({940, 1045});
-	m_panel.setPosition({20, 20});
+	m_panel.setPosition(20, 20);
 	m_panel.setFillColor({39, 39, 40});
 	m_panel.setOutlineColor(Color::Black);
 	m_panel.setOutlineThickness(5);
 
 	m_screen.setSize({900, 920});
-	m_screen.setPosition({35, 125});
+	m_screen.setPosition(35, 125);
 	m_screen.setOutlineColor(Color::White);
 	m_screen.setOutlineThickness(2);
 
@@ -84,7 +72,7 @@ CpuWindow::CpuWindow():
 	m_callstack.setFont(m_jetbrains);
 	m_callstack.setFillColor(Color::Black);
 
-	m_panelpixelsimage = Image(Vector2u(32, 32), Color::Black);
+	m_panelpixelsimage.create(32, 32, Color::Black);
 }
 
 void CpuWindow::update(
@@ -93,20 +81,20 @@ void CpuWindow::update(
 		std::array <int, 65536> &memory,
 		int stack_pointer,
 		int call_stack_pointer) {
+	Event event;
 
-	while (const std::optional event = m_window.pollEvent()) {
-		if (event->is<Event::Closed>())
+	while (m_window.pollEvent(event)) {
+		if (event.type == Event::Closed)
 			m_window.close();
-		//if (event.key.code == Keyboard::Q)
-		//if (event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Q)
-		//	m_window.close();
+		if (event.key.code == Keyboard::Q)
+			m_window.close();
 	}
 
 	m_window.clear(sf::Color::White);
 
 	std::string reg_ss;
 	for (int i = 0; i < 8; ++i) {
-		char reghex[5];
+		char reghex[4];
 		std::sprintf(reghex, "%X", registers[i]);
 		std::string hex = addPadding(reghex, 4, '0');
 		reg_ss.append(
@@ -129,7 +117,7 @@ void CpuWindow::update(
 		if (i % 16 == 0) {
 			memory_ss.append("\n");
 		}
-		char formatted[5];
+		char formatted[4];
 		std::sprintf(formatted, "%X", memory[i]);
 		std::string padded = addPadding(formatted, 4, '0');
 		memory_ss.append(padded);
@@ -213,23 +201,19 @@ void CpuWindow::placePixel(std::array <int, 65536> &memory) {
 		int g8 = static_cast<int>((g / 31.0) * 255);
 		int b8 = static_cast<int>((b / 31.0) * 255);
 		Color converted = Color(r8, g8, b8);
-		unsigned x = parameters & 31;
-		unsigned y = (parameters & 992) >> 5;
+		int x = parameters & 31;
+		int y = (parameters & 992) >> 5;
 
 		//std::cout
 		//	<< "Drawn pixel to: " << x << " " << y
 		//	<< " Color is: " << r8 << " " << g8 << " " << b8
 		//	<< std::endl;
-		
-		if (m_panelpixelsimage.getSize().x > x && m_panelpixelsimage.getSize().y > y) {
-			m_panelpixelsimage.setPixel({x, y}, converted);
-		}
+
+		m_panelpixelsimage.setPixel(x, y, converted);
 		memory[0xFFF4] = 0;
 	}
 
-	if (!m_panelpixels.loadFromImage(m_panelpixelsimage)) {
-		std::cout << "Failed to load image\n";
-	}
+	m_panelpixels.loadFromImage(m_panelpixelsimage);
 }
 
 void CpuWindow::closeWindow() {
